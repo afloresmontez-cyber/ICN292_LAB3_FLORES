@@ -1,0 +1,137 @@
+[
+  {
+    "id_solicitud": "DEV-1115",
+    "sku": "AU-210",
+    "unidades": "1",
+    "monto": "19990",
+    "dias_desde_compra": "3",
+    "estado_producto": "sin_abrir",
+    "email_cliente": "cliente1@example.cl"
+  },
+  {
+    "id_solicitud": "DEV-1116",
+    "sku": "TE-330",
+    "unidades": "2",
+    "monto": "69980",
+    "dias_desde_compra": "5",
+    "estado_producto": "abierto_sin_uso",
+    "email_cliente": "cliente2@example.cl"
+  },
+  {
+    "id_solicitud": "DEV-1117",
+    "sku": "HV-050",
+    "unidades": "1",
+    "monto": "24990",
+    "dias_desde_compra": "12",
+    "estado_producto": "con_fallas",
+    "email_cliente": "cliente3@example.cl"
+  },
+  {
+    "id_solicitud": "DEV-1118",
+    "sku": "MW-150",
+    "unidades": "1",
+    "monto": "79990",
+    "dias_desde_compra": "4",
+    "estado_producto": "sin_abrir",
+    "email_cliente": "cliente4@example.cl"
+  },
+  {
+    "id_solicitud": "DEV-1119",
+    "sku": "PL-120",
+    "unidades": "1",
+    "monto": "45990",
+    "dias_desde_compra": "25",
+    "estado_producto": "danado_por_uso",
+    "email_cliente": "cliente5@example.cl"
+  },
+  {
+    "id_solicitud": "DEV-1120",
+    "sku": "AS-260",
+    "unidades": "1",
+    "monto": "89990",
+    "dias_desde_compra": "2",
+    "estado_producto": "con_fallas",
+    "email_cliente": "cliente6@example.cl"
+  },
+  {
+    "id_solicitud": "DEV-1121",
+    "sku": "LV-330",
+    "unidades": "1",
+    "monto": "289990",
+    "dias_desde_compra": "9",
+    "estado_producto": "sin_abrir",
+    "email_cliente": "cliente7@example.cl"
+  },
+  {
+    "id_solicitud": "DEV-1122",
+    "sku": "PL-120",
+    "unidades": "1",
+    "monto": "45990",
+    "dias_desde_compra": "2",
+    "estado_producto": "sin_abrir",
+    "email_cliente": "cliente8@example.cl"
+  },
+  {
+    "id_solicitud": "DEV-1123",
+    "sku": "AU-210",
+    "unidades": "2",
+    "monto": "39980",
+    "dias_desde_compra": "15",
+    "estado_producto": "danado_por_uso",
+    "email_cliente": "cliente9@example.cl"
+  },
+  {
+    "id_solicitud": "DEV-1124",
+    "sku": "HV-050",
+    "unidades": "2",
+    "monto": "49980",
+    "dias_desde_compra": "1",
+    "estado_producto": "abierto_sin_uso",
+    "email_cliente": "cliente10@example.cl"
+  },
+  {
+    "id_solicitud": "DEV-1125",
+    "sku": "TE-330",
+    "unidades": "1",
+    "monto": "34990",
+    "dias_desde_compra": "22",
+    "estado_producto": "sin_abrir",
+    "email_cliente": "cliente11@example.cl"
+  },
+  {
+    "id_solicitud": "DEV-1126",
+    "sku": "MW-150",
+    "unidades": "1",
+    "monto": "79990",
+    "dias_desde_compra": "8",
+    "estado_producto": "con_fallas",
+    "email_cliente": "cliente12@example.cl"
+  },
+  {
+    "id_solicitud": "DEV-C01",
+    "sku": "CB-010",
+    "unidades": "1",
+    "monto": "9990",
+    "dias_desde_compra": "1",
+    "estado_producto": "sin_abrir",
+    "email_cliente": "control01@example.cl"
+  },
+  {
+    "id_solicitud": "DEV-C02",
+    "sku": "LV-330",
+    "unidades": "1",
+    "monto": "289990",
+    "dias_desde_compra": "2",
+    "estado_producto": "sin_abrir",
+    "email_cliente": "control02@example.cl"
+  },
+  {
+    "id_solicitud": "DEV-C03",
+    "sku": "MW-150",
+    "unidades": "1",
+    "monto": "79990",
+    "dias_desde_compra": "29",
+    "estado_producto": "abierto_sin_uso",
+    "email_cliente": "control03@example.cl"
+  }
+]
