@@ -1,0 +1,60 @@
+{
+  "name": "Emisor",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "66bb7490-9948-4465-ab71-70dbd20b03ec",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://afloresm.app.n8n.cloud/webhook-test/devoluciones",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n    \"id_solicitud\": \"DEV-C03\",\n    \"sku\": \"MW-150\",\n    \"unidades\": \"1\",\n    \"monto\": \"79990\",\n    \"dias_desde_compra\": \"29\",\n    \"estado_producto\": \"abierto_sin_uso\",\n    \"email_cliente\": \"control03@example.cl\"\n\n\n\n\n  }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        448,
+        0
+      ],
+      "id": "58d2089d-a9d5-4773-a658-292d298387c7",
+      "name": "HTTP Request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "e3400f69-b848-4b8d-8c00-7622598145a0",
+  "meta": {
+    "instanceId": "df54a18e7e627a7507574c3169e1ca4258c8f69fdef7ef7f33ead0e6d59bdd90"
+  },
+  "nodeGroups": [],
+  "id": "4udU2m0st2o09f5n",
+  "tags": []
+}

@@ -1,0 +1,287 @@
+{
+  "name": "resumen diario",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "2b93829b-e758-4f8b-9f8e-47a2ca2fe30a",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "v3yjXsXyhZF8bDR7",
+          "mode": "list",
+          "cachedResultName": "solicitud_devoluciones",
+          "cachedResultUrl": "/projects/Qe0WLNLG0PmgPbYB/datatables/v3yjXsXyhZF8bDR7"
+        },
+        "filters": {
+          "conditions": []
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "2217fbea-883a-43a9-9b47-b358a8efc2dd",
+      "name": "Get row(s)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "861eaeaf-0baa-437a-9b98-a7edf8daf989",
+              "name": "n_aprobacion",
+              "value": "={{ $json.ruta === \"APROBACION\" ? 1 : 0}}",
+              "type": "number"
+            },
+            {
+              "id": "1265bd69-27ff-4459-8c26-10e9ab48937d",
+              "name": "n_revision",
+              "value": "={{ $json.ruta === \"REVISION\" ? 1 : 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "794611dd-53c6-434e-b56d-a589a85c1189",
+              "name": "n_rechazo",
+              "value": "={{ $json.ruta === \"RECHAZO\" ? 1 : 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "492d956b-731f-4442-93af-36a7280907a0",
+              "name": "n_invalida",
+              "value": "={{ $json.ruta === \"INVALIDA\" ? 1 : 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "0ffa7baf-a63f-4772-971e-b00b39670b00",
+              "name": "monto_aprobacion",
+              "value": "={{ $json.ruta === \"APROBACION\" ? $json.monto : 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "ee3c9457-8ecf-4b3c-98b8-6cc84887fcf3",
+              "name": "monto_revision",
+              "value": "={{ $json.ruta === \"REVISION\" ? $json.monto : 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "02158fd1-6813-438e-813b-9ed7015570cc",
+              "name": "monto_rechazo",
+              "value": "={{ $json.ruta === \"RECHAZO\" ? Number($json.monto || 0) : 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "97bf8629-b072-4b85-b0c0-cf7bc8704a24",
+              "name": "monto_invalida",
+              "value": "={{ $json.ruta === \"INVALIDA\" ? Number($json.monto || 0) : 0 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        448,
+        0
+      ],
+      "id": "537c6887-b46f-4c97-a25d-46b8228b6dde",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "fieldsToSummarize": {
+          "values": [
+            {
+              "aggregation": "sum",
+              "field": "=n_aprobacion"
+            },
+            {
+              "aggregation": "sum",
+              "field": "=n_revision"
+            },
+            {
+              "aggregation": "sum",
+              "field": "=n_rechazo"
+            },
+            {
+              "aggregation": "sum",
+              "field": "n_invalida"
+            },
+            {
+              "aggregation": "sum",
+              "field": "monto_aprobacion"
+            },
+            {
+              "aggregation": "sum",
+              "field": "monto_revision"
+            },
+            {
+              "aggregation": "sum",
+              "field": "monto_rechazo"
+            },
+            {
+              "aggregation": "sum",
+              "field": "monto_invalida"
+            },
+            {
+              "aggregation": "sum",
+              "field": "monto"
+            },
+            {
+              "field": "id_solicitud"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.summarize",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        0
+      ],
+      "id": "286e14db-ea74-42e3-ad33-3edef7184427",
+      "name": "Summarize"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0c58f250-cfe6-4a35-82b2-91a65f1cc44b",
+              "name": "=mensaje",
+              "value": "={{ `RESUMEN DIARIO LAB 3\nFecha: ${$now.toFormat('yyyy-MM-dd')}\n\nSOLICITUDES POR RUTA\nAprobacion: ${Number($json.sum_n_aprobacion ?? 0)}\nRevision: ${Number($json.sum_n_revision ?? 0)}\nRechazo: ${Number($json.sum_n_rechazo ?? 0)}\nInvalida: ${Number($json.sum_n_invalida ?? 0)}\n\nTotal de solicitudes: ${Number($json.sum_n_aprobacion ?? 0) + Number($json.sum_n_revision ?? 0) + Number($json.sum_n_rechazo ?? 0) + Number($json.sum_n_invalida ?? 0)}\n\nMONTOS POR RUTA\nAprobacion: $${Number($json.sum_monto_aprobacion ?? 0)}\nRevision: $${Number($json.sum_monto_revision ?? 0)}\nRechazo: $${Number($json.sum_monto_rechazo ?? 0)}\nInvalida: $${Number($json.sum_monto_invalida ?? 0)}\n\nMonto total del dia: $${Number($json.sum_monto ?? 0)}\n\nTasa de aprobacion automatica: ${(100 * Number($json.sum_n_aprobacion ?? 0) / (Number($json.sum_n_aprobacion ?? 0) + Number($json.sum_n_revision ?? 0) + Number($json.sum_n_rechazo ?? 0) + Number($json.sum_n_invalida ?? 0) || 1)).toFixed(2)}%` }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        896,
+        0
+      ],
+      "id": "f7f67cb6-e6fe-46dc-b7c4-52daa3db3ef8",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "sendTo": "aflores.montez@gmail.com",
+        "subject": "resumen diario solicitudes de devolución ",
+        "emailType": "text",
+        "message": "={{ $json.mensaje }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        0
+      ],
+      "id": "fc0ed90d-4db9-44f8-8dff-366da87ffeb4",
+      "name": "Send a message",
+      "webhookId": "fdb04456-e6e2-4106-bd76-b167a8ab853d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "oaIXBuBZHgz2SGUm",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Summarize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d6cfb571-641f-4c2e-890c-a9de01359ccc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "df54a18e7e627a7507574c3169e1ca4258c8f69fdef7ef7f33ead0e6d59bdd90"
+  },
+  "nodeGroups": [],
+  "id": "ztpB6AhDMIBy9rcg",
+  "tags": []
+}
