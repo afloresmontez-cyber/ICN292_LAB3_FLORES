@@ -1,0 +1,229 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-nodecimaldot]{babel}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.3cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{parskip}
+\usepackage{fancyhdr}
+\usepackage[hidelinks]{hyperref}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{ragged2e}
+\usepackage{tabularx}
+\usepackage{url}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\renewcommand{\arraystretch}{1.15}
+\captionsetup{font=small,labelfont=bf}
+\pagestyle{fancy}
+\setlength{\headheight}{14pt}
+\fancyhf{}
+\lhead{ICN292 - Sistemas de Información para la Gestión}
+\rhead{Laboratorio 3}
+\cfoot{\thepage}
+\setlist[itemize]{nosep,leftmargin=1.4em}
+
+\newcommand{\figura}[3]{%
+\begin{figure}[H]
+\centering
+\includegraphics[width=#2\textwidth]{#1}
+\caption{#3}
+\end{figure}}
+
+\begin{document}
+
+% PORTADA
+\begin{titlepage}
+\centering
+\vspace*{1.0cm}
+\includegraphics[width=0.48\textwidth]{figures/logo.png}
+\vspace{1.2cm}
+
+{\Large \textbf{Universidad Técnica Federico Santa María}}\\[0.4cm]
+{\large Sistemas de Información para la Gestión}\\[1.4cm]
+
+{\Huge \textbf{Laboratorio 3}}\\[0.3cm]
+{\LARGE Automatización del proceso de devoluciones con n8n}\\[1.6cm]
+
+\begin{tabular}{@{}ll@{}}
+\textbf{Estudiante:} & Antonia Flores \\
+\textbf{Rol USM:} & 202360567-0 \\
+\textbf{Semilla:} & $S=368$ \\
+\textbf{Umbral de monto:} & $U=48.000$ \\
+\textbf{Plazo máximo:} & $D=7$ días \\
+\end{tabular}
+
+\vfill
+\begin{minipage}{0.9\textwidth}
+\small
+\textbf{Repositorio público:}\\
+\url{https://github.com/afloresmontez-cyber/ICN292_LAB3_FLORES}
+\end{minipage}
+
+\vspace{0.7cm}
+{\large Septiembre de 2026}
+\end{titlepage}
+
+% RESUMEN EJECUTIVO
+\section*{Resumen ejecutivo}
+
+El laboratorio tuvo como objetivo implementar en n8n un flujo de atención de solicitudes de devolución para un canal de comercio electrónico. El desarrollo se organizó en tres workflows: un emisor de solicitudes, un flujo principal de triage y un flujo programado de resumen diario. Para la semilla $S=368$ se utilizaron los parámetros $U=48.000$ y $D=7$ días.
+
+El workflow de triage recibe solicitudes mediante un Webhook POST, aplica reglas de negocio en un nodo Switch y clasifica cada caso en una de cuatro rutas: \texttt{INVALIDA}, \texttt{RECHAZO}, \texttt{REVISION} o \texttt{APROBACION}. Luego consulta la API pública de Indicadores Económicos de Chile, combina la respuesta con los datos de la solicitud, prepara el registro final, almacena la información en una Data Table y envía una notificación por correo. El flujo fue probado con las 15 solicitudes del conjunto entregado.
+
+El resumen programado recupera los registros de la tabla, genera variables auxiliares para contabilizar solicitudes y montos por ruta, utiliza el nodo Summarize para consolidar la información y construye un único mensaje enviado por Gmail. En la ejecución registrada se obtuvieron 3 aprobaciones, 5 revisiones y 7 rechazos, sin solicitudes inválidas. La tasa de aprobación automática fue de 20,00\%.
+
+La Parte C del laboratorio, correspondiente a pruebas sistemáticas de errores y casos borde, no fue desarrollada como una sección independiente. Por esta razón, el informe no presenta evidencia de pruebas que no fueron ejecutadas. Sí se dejan consignadas observaciones técnicas detectadas al revisar los workflows exportados, de manera que el estado real del desarrollo quede reflejado sin atribuir resultados inexistentes.
+
+\newpage
+\section{Parámetros y reglas de negocio}
+
+La semilla asignada para este desarrollo fue $S=368$. Aplicando las fórmulas indicadas en el enunciado:
+
+\[
+U = 30000 + 1000\,(S \bmod 50) = 30000 + 1000\,(18) = 48000
+\]
+
+\[
+D = 7 + (S \bmod 4) = 7 + 0 = 7
+\]
+
+Las reglas se evaluaron respetando la precedencia definida en el laboratorio: primero datos inválidos, luego rechazo, después revisión y finalmente aprobación. En términos operativos, la lógica utilizada fue la siguiente:
+
+\begin{itemize}
+    \item \textbf{Datos inválidos:} identificador vacío o monto menor o igual a cero.
+    \item \textbf{Rechazo:} más de 7 días desde la compra o producto \texttt{danado\_por\_uso}.
+    \item \textbf{Revisión:} monto superior a $48.000$ o producto \texttt{con\_fallas}.
+    \item \textbf{Aprobación:} cualquier solicitud que no active una regla anterior.
+\end{itemize}
+
+\section{Parte A - Flujo de triage}
+
+\subsection{Emisor y recepción de solicitudes}
+
+El workflow Emisor se construyó como un flujo separado y simple. Se activa manualmente y ejecuta un HTTP Request de tipo POST hacia el Webhook del triage. El cuerpo de la petición contiene los datos de una solicitud en formato JSON. Esta separación permitió probar las entradas sin modificar directamente el flujo principal.
+
+\figura{figures/emisor.jpeg}{0.88}{Workflow Emisor utilizado para enviar solicitudes al Webhook.}
+
+El flujo principal comienza con un Webhook configurado para recibir peticiones POST. A continuación, el nodo Switch evalúa las reglas de negocio y dirige cada solicitud hacia la rama correspondiente.
+
+\figura{figures/triage_completo.jpeg}{0.98}{Vista general del workflow de triage.}
+
+\subsection{Clasificación, API externa y registro}
+
+Cada rama asigna los campos \texttt{ruta} y \texttt{motivo}. Posteriormente, las ramas convergen en un nodo de preparación común. Desde allí se consulta la API pública \texttt{https://mindicador.cl/api}, se combina la respuesta con los datos originales mediante un Merge y se construye el registro final.
+
+El registro incorpora, entre otros campos, fecha, identificador de solicitud, SKU, monto, días desde la compra, estado del producto, correo lógico del cliente, ruta, motivo, parámetros $U$ y $D$, valor de la UF y monto expresado en UF. Después se inserta en la Data Table y se envía un correo con la clasificación obtenida.
+
+\figura{figures/triage_ejecucion.jpeg}{0.92}{Ejecución de una rama del triage y combinación con la consulta a la API pública.}
+
+La notificación por correo permite revisar de forma directa la solicitud, la ruta y el motivo asignado. En la evidencia siguiente se observa la solicitud DEV-1124 clasificada en revisión.
+
+\figura{figures/triage_email.jpeg}{0.62}{Correo generado por el workflow de triage para una solicitud procesada.}
+
+\subsection{Resultados de las 15 solicitudes}
+
+La tabla siguiente resume el resultado de aplicar el flujo a las 15 solicitudes utilizadas. Se muestran los campos solicitados para la evaluación: identificador, monto, días, estado, ruta y motivo registrado.
+
+\scriptsize
+\begin{longtable}{@{}p{1.65cm}r r p{2.65cm}p{1.75cm}p{3.45cm}@{}}
+\toprule
+\textbf{ID} & \textbf{Monto} & \textbf{Días} & \textbf{Estado} & \textbf{Ruta} & \textbf{Motivo} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Monto} & \textbf{Días} & \textbf{Estado} & \textbf{Ruta} & \textbf{Motivo} \\
+\midrule
+\endhead
+DEV-1115 & 19.990 & 3 & sin\_abrir & APROBACION & cumple \\
+DEV-1116 & 69.980 & 5 & abierto\_sin\_uso & REVISION & MONTO\_MAYOR\_A\_U \\
+DEV-1117 & 24.990 & 12 & con\_fallas & RECHAZO & PLAZO\_MAYOR\_A\_D \\
+DEV-1118 & 79.990 & 4 & abierto\_sin\_uso & REVISION & MONTO\_MAYOR\_A\_U \\
+DEV-1119 & 45.990 & 9 & sin\_abrir & RECHAZO & PLAZO\_MAYOR\_A\_D \\
+DEV-1120 & 89.990 & 2 & con\_fallas & REVISION & MONTO\_MAYOR\_A\_U \\
+DEV-1121 & 289.990 & 15 & abierto\_sin\_uso & RECHAZO & PLAZO\_MAYOR\_A\_D \\
+DEV-1122 & 45.990 & 2 & abierto\_sin\_uso & APROBACION & cumple \\
+DEV-1123 & 39.980 & 20 & sin\_abrir & RECHAZO & PLAZO\_MAYOR\_A\_D \\
+DEV-1124 & 49.980 & 1 & abierto\_sin\_uso & REVISION & PRODUCTO\_CON\_FALLAS \\
+DEV-1125 & 34.990 & 14 & danado\_por\_uso & RECHAZO & PLAZO\_MAYOR\_A\_D \\
+DEV-1126 & 79.990 & 10 & con\_fallas & RECHAZO & PLAZO\_MAYOR\_A\_D \\
+DEV-C01 & 9.990 & 1 & sin\_abrir & APROBACION & cumple \\
+DEV-C02 & 289.990 & 2 & sin\_abrir & REVISION & MONTO\_MAYOR\_A\_U \\
+DEV-C03 & 79.990 & 29 & abierto\_sin\_uso & RECHAZO & PLAZO\_MAYOR\_A\_D \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+En total, el conjunto quedó distribuido en 3 aprobaciones, 5 revisiones y 7 rechazos. No hubo solicitudes inválidas dentro de estas 15 entradas.
+
+\subsection{Observación sobre el motivo de DEV-1124}
+
+La ruta de DEV-1124 es coherente con el umbral $U=48.000$, ya que su monto es $49.980$. Sin embargo, el motivo mostrado por la implementación es \texttt{PRODUCTO\_CON\_FALLAS}, aunque el estado registrado es \texttt{abierto\_sin\_uso}. Al revisar el JSON del workflow se observa que la condición del Switch usa $48.000$, pero la expresión que genera el motivo compara el monto con $60.000$. Por lo tanto, la clasificación de la ruta es correcta, pero la etiqueta del motivo no coincide con la regla que originó esa clasificación. Esta diferencia se mantiene consignada en el informe en lugar de corregir retroactivamente el resultado.
+
+\section{Parte B - Resumen programado}
+
+El segundo flujo funcional corresponde al resumen diario. El workflow comienza con un Schedule Trigger y luego consulta los registros almacenados en la Data Table. Cada fila se transforma en variables auxiliares que indican si pertenece a aprobación, revisión, rechazo o inválida, tanto para cantidad como para monto.
+
+El nodo Summarize agrega esos campos y genera un único registro consolidado. Finalmente, un Edit Fields construye el mensaje y Gmail lo envía a la cuenta configurada.
+
+\figura{figures/resumen_workflow.jpeg}{0.98}{Workflow del resumen programado: lectura, preparación, consolidación y envío.}
+
+La ejecución registrada produjo los siguientes resultados:
+
+\begin{center}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{Ruta} & \textbf{Solicitudes} & \textbf{Monto total} \\
+\midrule
+APROBACION & 3 & \$75.970 \\
+REVISION & 5 & \$579.930 \\
+RECHAZO & 7 & \$595.920 \\
+INVALIDA & 0 & \$0 \\
+\midrule
+\textbf{Total} & \textbf{15} & \textbf{\$1.251.820} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+La tasa de aprobación automática se calculó como:
+
+\[
+\text{Tasa de aprobación} = \frac{3}{15}\times 100 = 20,00\%.
+\]
+
+\figura{figures/resumen_email.jpeg}{0.82}{Correo generado por el workflow de resumen diario.}
+
+La versión exportada del workflow recupera todos los registros disponibles en la tabla, ya que el nodo \texttt{Get row(s)} no contiene un filtro explícito por \texttt{fecha\_dia}. En la ejecución mostrada esto permitió consolidar las 15 solicitudes cargadas, pero para una operación diaria permanente sería recomendable filtrar por la fecha actual antes de resumir.
+
+\section{Parte C - Errores y casos borde}
+
+La Parte C no fue desarrollada como bloque de pruebas independiente. En consecuencia, no se presentan capturas ni resultados atribuidos a pruebas de entradas inválidas, límites exactos, error de tipo intencional o casos que el flujo no pueda resolver, porque esas pruebas no fueron ejecutadas de forma sistemática.
+
+Aun así, la revisión del desarrollo permite identificar dos aspectos que deberían verificarse en una siguiente iteración:
+
+\begin{itemize}
+    \item \textbf{Consistencia de reglas y motivos:} el umbral del Switch es $48.000$, mientras que una expresión de la rama de revisión utiliza $60.000$ para definir el texto del motivo. Esto explica la diferencia observada en DEV-1124.
+    \item \textbf{Resumen estrictamente diario:} el workflow de resumen debería incorporar un filtro por \texttt{fecha\_dia} para evitar mezclar ejecuciones de días distintos cuando la tabla acumule registros históricos.
+\end{itemize}
+
+Estas observaciones no reemplazan la Parte C solicitada; se incluyen únicamente para dejar documentadas limitaciones reales del estado actual del laboratorio.
+
+\section{Conclusión}
+
+El desarrollo permitió automatizar el flujo principal de devoluciones utilizando n8n sin recurrir a un nodo Code. El triage recibe solicitudes por Webhook, aplica reglas de precedencia, consulta un servicio externo, registra cada caso y genera una notificación. El workflow de resumen consolida las solicitudes almacenadas y produce un correo único con cantidades y montos por ruta.
+
+Con los parámetros asociados a $S=368$, las 15 solicitudes procesadas se distribuyeron en 3 aprobaciones, 5 revisiones y 7 rechazos, con una tasa de aprobación automática de 20,00\%. El resultado demuestra que la automatización principal y el resumen funcionan sobre el conjunto utilizado, aunque quedan pendientes las pruebas formales de la Parte C y algunos ajustes de consistencia antes de considerar el flujo como una versión definitiva.
+
+\vspace{0.5cm}
+\textbf{Repositorio:} \url{https://github.com/afloresmontez-cyber/ICN292_LAB3_FLORES}
+
+\end{document}
